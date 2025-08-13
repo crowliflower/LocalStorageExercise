@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    //getting jall the elements I need to change later
+    //getting all the elements I need to change later
     const noteContainer = document.getElementById("note-container");
     const newNoteButton = document.getElementById("new-note-button");
     const colorForm = document.getElementById("color-form");
@@ -18,23 +18,23 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!notes) {//if notes comes back as null, then we're assigning it as a new empty array
             notes = [];
         } else {
-            notes.JSON.parse(notes);//otherwise, parse the saved JSON
+            notes = JSON.parse(notes);//otherwise, parse the saved JSON
         }
         return notes;
 
     }
 
-    function saveNotes () {
+    function saveNotes(notes) {
         localStorage.setItem("notes", JSON.stringify(notes));
     }
 
     function loadNotes () {
         const notes = readNotes(); //reading all notes from memory to be loaded in a for of loop
-
+        console.log(notes);
         for (const note of notes) {// this function assigns all the proper data to where it goes in the note
-            const noteElement = document.createElement("textarea");//instatiating the note
+            const noteElement = document.createElement("div");//instatiating the note
             noteElement.setAttribute("data-note-id", note.id.toString()); //putting the note's id in the data attribute where the others have them
-            noteElement.value = note.content;//setting note ID 
+            noteElement.textContent = note.content;//setting note ID 
             noteElement.className = "note";//puts the note in the 'note' css class
             noteElement.style.backgroundColor = noteColor;//setting the note to be the same color as the others currently are
             noteContainer.appendChild(noteElement);//puts the note  in the right group so it continues to be updated after the dom is created
@@ -45,26 +45,26 @@ document.addEventListener("DOMContentLoaded", function() {
     
 
     colorForm.addEventListener("submit", function (e) {
-        //don't refresh the pages on button press
         e.preventDefault();
-        // console.log(e);
-
-        //stores the user entered color, trims of any spaces that may confuse the color code
         const newColor = colorInput.value.trim();
-        const notes = document.querySelectorAll('.note');
+        if (!newColor) return;
 
-        //loop through every note on the page to change its background color
-        for (const note of notes) {
+        const notes = readNotes();
+        document.querySelectorAll(".note").forEach(note => {
             note.style.backgroundColor = newColor;
-        }
+            const id = Number(note.getAttribute("data-note-id"));
+            const noteObj = notes.find(n => n.id === id);
+            if (noteObj) noteObj.color = newColor;
+        });
 
-        colorInput.value = "";
+        saveNotes(notes);
         noteColor = newColor;
-        
-        localStorage.setItem("noteColor", noteColor);//saving the current notecolor to storage
+        localStorage.setItem("noteColor", noteColor);
+        colorInput.value = "";
     });
     
     function addNewNote () {
+        const notes = readNotes();
         const note = document.createElement('div'); //instantiating the box as a new div
         note.setAttribute('data-note-id', noteIDCounter.toString()); //assigning the data attribute to the box id
         note.textContent = `Note ${noteIDCounter}`;//setting the box ID as content
@@ -72,8 +72,21 @@ document.addEventListener("DOMContentLoaded", function() {
         note.style.backgroundColor = noteColor;//assigning box color
         noteContainer.appendChild(note);//putting this new box in the box container so the DOM still has jurisdiction over it even after creation
         
+        notes.push({
+            id: noteIDCounter,
+            content: note.textContent,
+            color: noteColor
+        });
+        saveNotes(notes);
+
+        console.log(noteIDCounter);
+
         noteIDCounter++;
+
+        console.log(noteIDCounter);
+        localStorage.setItem("noteIDCounter", noteIDCounter);
         //holy shit, this function was hard for me
+
     }
 
     newNoteButton.addEventListener("click", function () {
@@ -105,7 +118,6 @@ document.addEventListener("DOMContentLoaded", function() {
             e.target.textContent = `x ${e.pageX}, y ${e.pageY}`;
         }
 
-        saveNotes(notes);
     });
 
     document.addEventListener("mouseout", function(e) {
